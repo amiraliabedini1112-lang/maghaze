@@ -3,7 +3,7 @@ const SUPABASE_URL = "https://xarblclsauoltgbeeyiw.supabase.co";
 const SUPABASE_KEY = "sb_publishable_jSGWrehYjhZjEq-O-2dzNw_0DzOWMTz";
 
 const USERNAME = "amirali";
-const PASSWORD = "mo";
+const PASSWORD = "sstttat";
 
 let products = [];
 let transactions = [];
