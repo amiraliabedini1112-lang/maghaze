@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدیریت مغازه</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login">
+  <h1>مدیریت مغازه</h1>
+  <input id="username" placeholder="نام کاربری">
+  <input id="password" type="password" placeholder="رمز عبور">
+  <button onclick="login()">ورود</button>
+  <p id="error"></p>
+</div>
+
+<div id="app" style="display:none">
+  <h1>مدیریت موجودی مغازه</h1>
+
+  <button onclick="show('products')">کالاها</button>
+  <button onclick="show('sales')">ثبت فروش</button>
+  <button onclick="logout()">خروج</button>
+
+  <div id="products">
+    <h2>افزودن کالا</h2>
+
+    <input id="name" placeholder="نام کالا">
+    <input id="buy" type="number" placeholder="قیمت خرید">
+    <input id="sell" type="number" placeholder="قیمت فروش">
+    <input id="stock" type="number" placeholder="موجودی">
+
+    <button onclick="addProduct()">ثبت کالا</button>
+
+    <h2>لیست کالاها</h2>
+    <div id="productList"></div>
+  </div>
+
+  <div id="sales" style="display:none">
+    <h2>ثبت فروش</h2>
+
+    <select id="saleProduct"></select>
+    <input id="saleQty" type="number" value="1" min="1">
+
+    <button onclick="addSale()">ثبت فروش</button>
+
+    <p id="saleMessage"></p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
