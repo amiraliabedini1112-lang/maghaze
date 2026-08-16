@@ -1,4 +1,4 @@
-```
+```javascript
 const SUPABASE_URL = "https://xarblclsauoltgbeeyiw.supabase.co";
 const SUPABASE_KEY = "sb_publishable_jSGWrehYjhZjEq-O-2dzNw_0DzOWMTz";
 
@@ -10,7 +10,20 @@ let transactions = [];
 
 
 /* =========================
-   DATABASE
+   SUPABASE REQUEST
+========================= */
+
+function supabaseHeaders(extra = {}) {
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        ...extra
+    };
+}
+
+
+/* =========================
+   LOAD PRODUCTS
 ========================= */
 
 async function loadData() {
@@ -18,15 +31,14 @@ async function loadData() {
         const response = await fetch(
             `${SUPABASE_URL}/rest/v1/products?select=*&order=id.desc`,
             {
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`
-                }
+                method: "GET",
+                headers: supabaseHeaders()
             }
         );
 
         if (!response.ok) {
-            throw new Error(await response.text());
+            const text = await response.text();
+            throw new Error(text || "خطا در دریافت کالاها");
         }
 
         products = await response.json();
@@ -37,26 +49,29 @@ async function loadData() {
         updateDashboard();
 
     } catch (error) {
-        console.error(error);
-        alert("خطا در اتصال به دیتابیس:\n" + error.message);
+        console.error("loadData:", error);
+        alert("خطا در دریافت کالاها:\n" + error.message);
     }
 }
 
 
+/* =========================
+   LOAD TRANSACTIONS
+========================= */
+
 async function loadTransactions() {
     try {
         const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/transactions?select=*&order=id.desc`,
+            `${SUPABASE_URL}/rest/v1/transactions?select=*&order=created_at.desc`,
             {
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`
-                }
+                method: "GET",
+                headers: supabaseHeaders()
             }
         );
 
         if (!response.ok) {
-            throw new Error(await response.text());
+            const text = await response.text();
+            throw new Error(text || "خطا در دریافت معاملات");
         }
 
         transactions = await response.json();
@@ -65,7 +80,7 @@ async function loadTransactions() {
         updateDashboard();
 
     } catch (error) {
-        console.error(error);
+        console.error("loadTransactions:", error);
         alert("خطا در دریافت تاریخچه:\n" + error.message);
     }
 }
@@ -76,31 +91,54 @@ async function loadTransactions() {
 ========================= */
 
 function login() {
-    const username =
-        document.getElementById("username").value.trim();
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const errorElement = document.getElementById("error");
 
-    const password =
-        document.getElementById("password").value;
+    const username = usernameInput
+        ? usernameInput.value.trim()
+        : "";
+
+    const password = passwordInput
+        ? passwordInput.value
+        : "";
 
     if (username === USERNAME && password === PASSWORD) {
 
         document.getElementById("login").style.display = "none";
         document.getElementById("app").style.display = "block";
 
+        if (errorElement) {
+            errorElement.textContent = "";
+        }
+
         loadData();
         loadTransactions();
 
     } else {
 
-        document.getElementById("error").textContent =
-            "نام کاربری یا رمز عبور اشتباه است.";
+        if (errorElement) {
+            errorElement.textContent =
+                "نام کاربری یا رمز عبور اشتباه است.";
+        }
     }
 }
 
 
+/* =========================
+   LOGOUT
+========================= */
+
 function logout() {
     document.getElementById("app").style.display = "none";
     document.getElementById("login").style.display = "block";
+
+    const passwordInput =
+        document.getElementById("password");
+
+    if (passwordInput) {
+        passwordInput.value = "";
+    }
 }
 
 
@@ -120,15 +158,14 @@ function show(section) {
 
     sections.forEach(id => {
 
-        const element =
-            document.getElementById(id);
+        const element = document.getElementById(id);
 
         if (element) {
             element.style.display =
                 id === section ? "block" : "none";
         }
-
     });
+
 
     if (section === "products") {
         renderProducts();
@@ -153,22 +190,31 @@ function show(section) {
 
 
 /* =========================
-   PRODUCTS
+   ADD PRODUCT
 ========================= */
 
 async function addProduct() {
 
-    const name =
-        document.getElementById("name").value.trim();
+    const nameElement = document.getElementById("name");
+    const buyElement = document.getElementById("buy");
+    const sellElement = document.getElementById("sell");
+    const stockElement = document.getElementById("stock");
 
-    const buy =
-        Number(document.getElementById("buy").value);
+    const name = nameElement
+        ? nameElement.value.trim()
+        : "";
 
-    const sell =
-        Number(document.getElementById("sell").value);
+    const buy = buyElement
+        ? Number(buyElement.value)
+        : 0;
 
-    const stock =
-        Number(document.getElementById("stock").value);
+    const sell = sellElement
+        ? Number(sellElement.value)
+        : 0;
+
+    const stock = stockElement
+        ? Number(stockElement.value)
+        : 0;
 
 
     if (!name) {
@@ -197,12 +243,10 @@ async function addProduct() {
             {
                 method: "POST",
 
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`,
+                headers: supabaseHeaders({
                     "Content-Type": "application/json",
                     "Prefer": "return=representation"
-                },
+                }),
 
                 body: JSON.stringify({
                     name: name,
@@ -215,14 +259,15 @@ async function addProduct() {
 
 
         if (!response.ok) {
-            throw new Error(await response.text());
+            const text = await response.text();
+            throw new Error(text || "ثبت کالا ناموفق بود.");
         }
 
 
-        document.getElementById("name").value = "";
-        document.getElementById("buy").value = "";
-        document.getElementById("sell").value = "";
-        document.getElementById("stock").value = "";
+        if (nameElement) nameElement.value = "";
+        if (buyElement) buyElement.value = "";
+        if (sellElement) sellElement.value = "";
+        if (stockElement) stockElement.value = "";
 
 
         alert("کالا با موفقیت ثبت شد.");
@@ -231,7 +276,7 @@ async function addProduct() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("addProduct:", error);
 
         alert(
             "ثبت کالا انجام نشد:\n" +
@@ -256,14 +301,13 @@ function renderProducts() {
     if (!products.length) {
 
         list.innerHTML =
-            "<p>هنوز کالایی ثبت نشده است.";
+            "<p>هنوز کالایی ثبت نشده است.</p>";
 
         return;
     }
 
 
-    list.innerHTML =
-        products.map(product => `
+    list.innerHTML = products.map(product => `
 
         <div style="
             background:white;
@@ -320,16 +364,18 @@ function renderProducts() {
 
 async function changeStock(id, amount) {
 
-    const product =
-        products.find(
-            p => Number(p.id) === Number(id)
-        );
+    const product = products.find(
+        p => Number(p.id) === Number(id)
+    );
 
-    if (!product) return;
+    if (!product) {
+        alert("کالا پیدا نشد.");
+        return;
+    }
 
 
     const newStock =
-        Number(product.stock) + Number(amount);
+        Number(product.stock || 0) + Number(amount);
 
 
     if (newStock < 0) {
@@ -345,11 +391,9 @@ async function changeStock(id, amount) {
             {
                 method: "PATCH",
 
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`,
+                headers: supabaseHeaders({
                     "Content-Type": "application/json"
-                },
+                }),
 
                 body: JSON.stringify({
                     stock: newStock
@@ -359,7 +403,8 @@ async function changeStock(id, amount) {
 
 
         if (!response.ok) {
-            throw new Error(await response.text());
+            const text = await response.text();
+            throw new Error(text || "تغییر موجودی ناموفق بود.");
         }
 
 
@@ -367,7 +412,7 @@ async function changeStock(id, amount) {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("changeStock:", error);
 
         alert(
             "تغییر موجودی انجام نشد:\n" +
@@ -395,24 +440,23 @@ async function deleteProduct(id) {
             {
                 method: "DELETE",
 
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`
-                }
+                headers: supabaseHeaders()
             }
         );
 
 
         if (!response.ok) {
-            throw new Error(await response.text());
+            const text = await response.text();
+            throw new Error(text || "حذف کالا ناموفق بود.");
         }
 
 
         await loadData();
+        await loadTransactions();
 
     } catch (error) {
 
-        console.error(error);
+        console.error("deleteProduct:", error);
 
         alert(
             "حذف کالا انجام نشد:\n" +
@@ -437,7 +481,7 @@ function updateSaleProducts() {
     if (!products.length) {
 
         select.innerHTML =
-            "<option value=''>ابتدا کالا ثبت کنید</option>";
+            `<option value="">ابتدا کالا ثبت کنید</option>`;
 
         return;
     }
@@ -471,7 +515,7 @@ function updatePurchaseProducts() {
     if (!products.length) {
 
         select.innerHTML =
-            "<option value=''>ابتدا کالا ثبت کنید</option>";
+            `<option value="">ابتدا کالا ثبت کنید</option>`;
 
         return;
     }
@@ -496,22 +540,25 @@ function updatePurchaseProducts() {
 
 async function addSale() {
 
-    const id =
-        Number(
-            document.getElementById("saleProduct").value
-        );
+    const productElement =
+        document.getElementById("saleProduct");
+
+    const qtyElement =
+        document.getElementById("saleQty");
 
 
-    const qty =
-        Number(
-            document.getElementById("saleQty").value
-        );
+    const id = productElement
+        ? Number(productElement.value)
+        : NaN;
+
+    const qty = qtyElement
+        ? Number(qtyElement.value)
+        : NaN;
 
 
-    const product =
-        products.find(
-            p => Number(p.id) === id
-        );
+    const product = products.find(
+        p => Number(p.id) === id
+    );
 
 
     if (!product) {
@@ -526,7 +573,11 @@ async function addSale() {
     }
 
 
-    if (Number(product.stock) < qty) {
+    const currentStock =
+        Number(product.stock || 0);
+
+
+    if (currentStock < qty) {
         alert("موجودی کافی نیست.");
         return;
     }
@@ -535,45 +586,51 @@ async function addSale() {
     try {
 
         const newStock =
-            Number(product.stock) - qty;
+            currentStock - qty;
 
 
-        /* اول کم کردن موجودی */
+        /*
+         * کم کردن موجودی
+         */
 
-        const updateResponse =
-            await fetch(
-                `${SUPABASE_URL}/rest/v1/products?id=eq.${id}`,
-                {
-                    method: "PATCH",
+        const updateResponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/products?id=eq.${id}`,
+            {
+                method: "PATCH",
 
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": `Bearer ${SUPABASE_KEY}`,
-                        "Content-Type": "application/json"
-                    },
+                headers: supabaseHeaders({
+                    "Content-Type": "application/json"
+                }),
 
-                    body: JSON.stringify({
-                        stock: newStock
-                    })
-                }
-            );
+                body: JSON.stringify({
+                    stock: newStock
+                })
+            }
+        );
 
 
         if (!updateResponse.ok) {
+
+            const text =
+                await updateResponse.text();
+
             throw new Error(
-                await updateResponse.text()
+                text || "تغییر موجودی ناموفق بود."
             );
         }
 
 
-        const total =
-            Number(product.sell_price) * qty;
+        const unitPrice =
+            Number(product.sell_price || 0);
+
+        const totalPrice =
+            unitPrice * qty;
 
 
         /*
-         * ثبت فروش
+         * ثبت معامله فروش
          *
-         * فقط ستون‌های واقعی جدول:
+         * ستون‌های واقعی:
          * product_id
          * type
          * quantity
@@ -587,28 +644,17 @@ async function addSale() {
                 {
                     method: "POST",
 
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": `Bearer ${SUPABASE_KEY}`,
+                    headers: supabaseHeaders({
                         "Content-Type": "application/json",
                         "Prefer": "return=representation"
-                    },
+                    }),
 
                     body: JSON.stringify({
-
+                        product_id: product.id,
                         type: "sale",
-
-                        product_id:
-                            product.id,
-
-                        quantity:
-                            qty,
-
-                        unit_price:
-                            Number(product.sell_price),
-
-                        total_price:
-                            total
+                        quantity: qty,
+                        unit_price: unitPrice,
+                        total_price: totalPrice
                     })
                 }
             );
@@ -616,9 +662,13 @@ async function addSale() {
 
         if (!transactionResponse.ok) {
 
+            const errorText =
+                await transactionResponse.text();
+
+
             /*
-             * اگر ثبت معامله شکست خورد،
-             * موجودی را برمی‌گردانیم.
+             * برگرداندن موجودی
+             * اگر ثبت معامله شکست خورد
              */
 
             await fetch(
@@ -626,21 +676,19 @@ async function addSale() {
                 {
                     method: "PATCH",
 
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": `Bearer ${SUPABASE_KEY}`,
+                    headers: supabaseHeaders({
                         "Content-Type": "application/json"
-                    },
+                    }),
 
                     body: JSON.stringify({
-                        stock: Number(product.stock)
+                        stock: currentStock
                     })
                 }
             );
 
 
             throw new Error(
-                await transactionResponse.text()
+                errorText || "ثبت فروش ناموفق بود."
             );
         }
 
@@ -654,11 +702,8 @@ async function addSale() {
         }
 
 
-        const qtyInput =
-            document.getElementById("saleQty");
-
-        if (qtyInput) {
-            qtyInput.value = "";
+        if (qtyElement) {
+            qtyElement.value = "1";
         }
 
 
@@ -668,7 +713,7 @@ async function addSale() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("addSale:", error);
 
         alert(
             "ثبت فروش انجام نشد:\n" +
@@ -684,22 +729,25 @@ async function addSale() {
 
 async function addPurchase() {
 
-    const id =
-        Number(
-            document.getElementById("purchaseProduct").value
-        );
+    const productElement =
+        document.getElementById("purchaseProduct");
+
+    const qtyElement =
+        document.getElementById("purchaseQty");
 
 
-    const qty =
-        Number(
-            document.getElementById("purchaseQty").value
-        );
+    const id = productElement
+        ? Number(productElement.value)
+        : NaN;
+
+    const qty = qtyElement
+        ? Number(qtyElement.value)
+        : NaN;
 
 
-    const product =
-        products.find(
-            p => Number(p.id) === id
-        );
+    const product = products.find(
+        p => Number(p.id) === id
+    );
 
 
     if (!product) {
@@ -714,46 +762,56 @@ async function addPurchase() {
     }
 
 
+    const currentStock =
+        Number(product.stock || 0);
+
+
     try {
 
         const newStock =
-            Number(product.stock) + qty;
+            currentStock + qty;
 
 
-        /* اول افزایش موجودی */
+        /*
+         * افزایش موجودی
+         */
 
-        const updateResponse =
-            await fetch(
-                `${SUPABASE_URL}/rest/v1/products?id=eq.${id}`,
-                {
-                    method: "PATCH",
+        const updateResponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/products?id=eq.${id}`,
+            {
+                method: "PATCH",
 
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": `Bearer ${SUPABASE_KEY}`,
-                        "Content-Type": "application/json"
-                    },
+                headers: supabaseHeaders({
+                    "Content-Type": "application/json"
+                }),
 
-                    body: JSON.stringify({
-                        stock: newStock
-                    })
-                }
-            );
+                body: JSON.stringify({
+                    stock: newStock
+                })
+            }
+        );
 
 
         if (!updateResponse.ok) {
+
+            const text =
+                await updateResponse.text();
+
             throw new Error(
-                await updateResponse.text()
+                text || "تغییر موجودی ناموفق بود."
             );
         }
 
 
-        const total =
-            Number(product.buy_price) * qty;
+        const unitPrice =
+            Number(product.buy_price || 0);
+
+        const totalPrice =
+            unitPrice * qty;
 
 
         /*
-         * ثبت خرید
+         * ثبت معامله خرید
          */
 
         const transactionResponse =
@@ -762,28 +820,17 @@ async function addPurchase() {
                 {
                     method: "POST",
 
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": `Bearer ${SUPABASE_KEY}`,
+                    headers: supabaseHeaders({
                         "Content-Type": "application/json",
                         "Prefer": "return=representation"
-                    },
+                    }),
 
                     body: JSON.stringify({
-
+                        product_id: product.id,
                         type: "purchase",
-
-                        product_id:
-                            product.id,
-
-                        quantity:
-                            qty,
-
-                        unit_price:
-                            Number(product.buy_price),
-
-                        total_price:
-                            total
+                        quantity: qty,
+                        unit_price: unitPrice,
+                        total_price: totalPrice
                     })
                 }
             );
@@ -791,9 +838,13 @@ async function addPurchase() {
 
         if (!transactionResponse.ok) {
 
+            const errorText =
+                await transactionResponse.text();
+
+
             /*
-             * اگر ثبت خرید شکست خورد،
-             * موجودی را به مقدار قبلی برمی‌گردانیم.
+             * برگرداندن موجودی
+             * اگر ثبت معامله شکست خورد
              */
 
             await fetch(
@@ -801,21 +852,19 @@ async function addPurchase() {
                 {
                     method: "PATCH",
 
-                    headers: {
-                        "apikey": SUPABASE_KEY,
-                        "Authorization": `Bearer ${SUPABASE_KEY}`,
+                    headers: supabaseHeaders({
                         "Content-Type": "application/json"
-                    },
+                    }),
 
                     body: JSON.stringify({
-                        stock: Number(product.stock)
+                        stock: currentStock
                     })
                 }
             );
 
 
             throw new Error(
-                await transactionResponse.text()
+                errorText || "ثبت خرید ناموفق بود."
             );
         }
 
@@ -829,11 +878,8 @@ async function addPurchase() {
         }
 
 
-        const qtyInput =
-            document.getElementById("purchaseQty");
-
-        if (qtyInput) {
-            qtyInput.value = "";
+        if (qtyElement) {
+            qtyElement.value = "1";
         }
 
 
@@ -843,7 +889,7 @@ async function addPurchase() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("addPurchase:", error);
 
         alert(
             "ثبت خرید انجام نشد:\n" +
@@ -875,13 +921,13 @@ function renderHistory() {
 
 
     list.innerHTML =
-        transactions.map(t => {
+        transactions.map(transaction => {
 
             const product =
                 products.find(
                     p =>
                         Number(p.id) ===
-                        Number(t.product_id)
+                        Number(transaction.product_id)
                 );
 
 
@@ -891,12 +937,40 @@ function renderHistory() {
                     : "کالای حذف‌شده";
 
 
+            const typeText =
+                transaction.type === "sale"
+                    ? "فروش"
+                    : "خرید";
+
+
             const quantity =
-                Number(t.quantity || 0);
+                Number(
+                    transaction.quantity || 0
+                );
 
 
             const total =
-                Number(t.total_price || 0);
+                Number(
+                    transaction.total_price || 0
+                );
+
+
+            let dateText = "-";
+
+
+            if (transaction.created_at) {
+
+                const date =
+                    new Date(
+                        transaction.created_at
+                    );
+
+                if (!Number.isNaN(date.getTime())) {
+
+                    dateText =
+                        date.toLocaleString("fa-IR");
+                }
+            }
 
 
             return `
@@ -910,11 +984,7 @@ function renderHistory() {
                 ">
 
                     <strong>
-                        ${
-                            t.type === "sale"
-                                ? "فروش"
-                                : "خرید"
-                        }
+                        ${typeText}
                     </strong>
 
                     <br>
@@ -936,15 +1006,7 @@ function renderHistory() {
                     <br>
 
                     تاریخ:
-                    ${
-                        t.created_at
-                            ? new Date(
-                                t.created_at
-                              ).toLocaleString(
-                                "fa-IR"
-                              )
-                            : "-"
-                    }
+                    ${dateText}
 
                 </div>
 
@@ -987,56 +1049,93 @@ function updateDashboard() {
 
     if (stockValueElement) {
 
-        const value =
+        const stockValue =
             products.reduce(
+                (sum, product) => {
 
-                (sum, p) =>
+                    return sum +
+                        Number(
+                            product.buy_price || 0
+                        ) *
+                        Number(
+                            product.stock || 0
+                        );
 
-                    sum +
-
-                    Number(
-                        p.buy_price || 0
-                    ) *
-
-                    Number(
-                        p.stock || 0
-                    ),
-
+                },
                 0
             );
 
 
         stockValueElement.textContent =
-            value.toLocaleString();
+            stockValue.toLocaleString();
     }
 
 
     if (salesElement) {
 
-        const value =
+        const today =
+            new Date();
+
+        const todayYear =
+            today.getFullYear();
+
+        const todayMonth =
+            today.getMonth();
+
+        const todayDate =
+            today.getDate();
+
+
+        const todaySales =
             transactions
+                .filter(transaction => {
 
-                .filter(
-                    t =>
-                        t.type === "sale"
-                )
+                    if (
+                        transaction.type !==
+                        "sale"
+                    ) {
+                        return false;
+                    }
 
+
+                    if (!transaction.created_at) {
+                        return false;
+                    }
+
+
+                    const date =
+                        new Date(
+                            transaction.created_at
+                        );
+
+
+                    return (
+                        date.getFullYear() ===
+                        todayYear &&
+
+                        date.getMonth() ===
+                        todayMonth &&
+
+                        date.getDate() ===
+                        todayDate
+                    );
+
+                })
                 .reduce(
+                    (sum, transaction) => {
 
-                    (sum, t) =>
+                        return sum +
+                            Number(
+                                transaction.total_price || 0
+                            );
 
-                        sum +
-
-                        Number(
-                            t.total_price || 0
-                        ),
-
+                    },
                     0
                 );
 
 
         salesElement.textContent =
-            value.toLocaleString();
+            todaySales.toLocaleString();
     }
 
 
@@ -1051,7 +1150,7 @@ function updateDashboard() {
 
     if (!transactions.length) {
 
-        recent.textContent =
+        recent.innerHTML =
             "هنوز معامله‌ای ثبت نشده است.";
 
         return;
@@ -1059,18 +1158,15 @@ function updateDashboard() {
 
 
     recent.innerHTML =
-
         transactions
-
             .slice(0, 5)
-
-            .map(t => {
+            .map(transaction => {
 
                 const product =
                     products.find(
                         p =>
                             Number(p.id) ===
-                            Number(t.product_id)
+                            Number(transaction.product_id)
                     );
 
 
@@ -1080,15 +1176,19 @@ function updateDashboard() {
                         : "کالای حذف‌شده";
 
 
+                const typeText =
+                    transaction.type === "sale"
+                        ? "فروش"
+                        : "خرید";
+
+
                 return `
 
-                    <div>
+                    <div style="
+                        margin:6px 0;
+                    ">
 
-                        ${
-                            t.type === "sale"
-                                ? "فروش"
-                                : "خرید"
-                        }
+                        ${typeText}
 
                         -
 
@@ -1096,8 +1196,10 @@ function updateDashboard() {
 
                         -
 
+                        تعداد:
+
                         ${Number(
-                            t.quantity || 0
+                            transaction.quantity || 0
                         )}
 
                     </div>
@@ -1105,48 +1207,32 @@ function updateDashboard() {
                 `;
 
             })
-
             .join("");
 }
 
 
 /* =========================
-   SECURITY / HTML
+   ESCAPE HTML
 ========================= */
 
 function escapeHtml(value) {
 
     return String(value ?? "")
 
-        .replace(
-            /&/g,
-            "&amp;"
-        )
+        .replace(/&/g, "&amp;")
 
-        .replace(
-            /</g,
-            "&lt;"
-        )
+        .replace(/</g, "&lt;")
 
-        .replace(
-            />/g,
-            "&gt;"
-        )
+        .replace(/>/g, "&gt;")
 
-        .replace(
-            /"/g,
-            "&quot;"
-        )
+        .replace(/"/g, "&quot;")
 
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/'/g, "&#039;");
 }
 
 
 /* =========================
-   STARTUP
+   START
 ========================= */
 
 document.addEventListener(
@@ -1156,21 +1242,61 @@ document.addEventListener(
         const loginBox =
             document.getElementById("login");
 
-
         const appBox =
             document.getElementById("app");
 
 
-        if (loginBox && appBox) {
+        if (loginBox) {
+            loginBox.style.display = "block";
+        }
 
-            appBox.style.display =
-                "none";
 
-            loginBox.style.display =
-                "block";
+        if (appBox) {
+            appBox.style.display = "none";
+        }
+
+
+        /*
+         * اجازه ورود با Enter
+         */
+
+        const passwordInput =
+            document.getElementById("password");
+
+
+        if (passwordInput) {
+
+            passwordInput.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (event.key === "Enter") {
+                        login();
+                    }
+
+                }
+            );
+        }
+
+
+        const usernameInput =
+            document.getElementById("username");
+
+
+        if (usernameInput) {
+
+            usernameInput.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (event.key === "Enter") {
+                        login();
+                    }
+
+                }
+            );
         }
 
     }
 );
-
 ```
