@@ -1,54 +1,10 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مدیریت مغازه</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<div id="login">
-  <h1>مدیریت مغازه</h1>
-  <input id="username" placeholder="نام کاربری">
-  <input id="password" type="password" placeholder="رمز عبور">
-  <button onclick="login()">ورود</button>
-  <p id="error"></p>
-</div>
-
-<div id="app" style="display:none">
-  <h1>مدیریت موجودی مغازه</h1>
-
-  <button onclick="show('products')">کالاها</button>
-  <button onclick="show('sales')">ثبت فروش</button>
-  <button onclick="logout()">خروج</button>
-
-  <div id="products">
-    <h2>افزودن کالا</h2>
-
-    <input id="name" placeholder="نام کالا">
-    <input id="buy" type="number" placeholder="قیمت خرید">
-    <input id="sell" type="number" placeholder="قیمت فروش">
-    <input id="stock" type="number" placeholder="موجودی">
-
-    <button onclick="addProduct()">ثبت کالا</button>
-
-    <h2>لیست کالاها</h2>
-    <div id="productList"></div>
-  </div>
-
-  <div id="sales" style="display:none">
-    <h2>ثبت فروش</h2>
-
-    <select id="saleProduct"></select>
-    <input id="saleQty" type="number" value="1" min="1">
-
-    <button onclick="addSale()">ثبت فروش</button>
-
-    <p id="saleMessage"></p>
-  </div>
-</div>
-
-<script src="app.js"></script>
-</body>
-</html>
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مدیریت مغازه</title><link rel="stylesheet" href="style.css"></head><body>
+<div id="login" class="login"><div class="card"><div class="logo">🏪</div><h1>مدیریت مغازه</h1><p>ورود به پنل</p><input id="username" placeholder="نام کاربری"><input id="password" type="password" placeholder="رمز عبور"><button class="primary full" onclick="login()">ورود</button><p id="error" class="error"></p></div></div>
+<div id="app" style="display:none"><aside><div class="brand">🏪 مغازه</div><button class="nav active" onclick="show('dashboard',this)">📊 داشبورد</button><button class="nav" onclick="show('products',this)">📦 کالاها</button><button class="nav" onclick="show('sales',this)">🧾 فروش</button><button class="nav" onclick="show('purchases',this)">🛒 خرید</button><button class="nav" onclick="show('history',this)">📜 تاریخچه</button><button class="logout" onclick="logout()">خروج</button></aside>
+<main><header><div><h1 id="pageTitle">داشبورد</h1><p>مدیریت موجودی و معاملات</p></div><span id="status" class="status">در حال اتصال...</span></header>
+<section id="dashboard" class="section active"><div class="stats"><div><span>تعداد کالا</span><b id="statProducts">0</b></div><div><span>موجودی کل</span><b id="statStock">0</b></div><div><span>فروش امروز</span><b id="statSales">0 تومان</b></div><div><span>ارزش موجودی</span><b id="statValue">0 تومان</b></div></div><div class="panel"><h2>آخرین معاملات</h2><div id="recent" class="history"></div></div></section>
+<section id="products" class="section"><div class="panel"><h2>افزودن کالا</h2><div class="grid"><input id="name" placeholder="نام کالا"><input id="buy" type="number" min="0" placeholder="قیمت خرید"><input id="sell" type="number" min="0" placeholder="قیمت فروش"><input id="stock" type="number" min="0" placeholder="موجودی اولیه"></div><button class="primary" onclick="addProduct()">ثبت کالا</button></div><div class="panel"><div class="row"><h2>لیست کالاها</h2><input id="search" placeholder="جستجو..." oninput="renderProducts()"></div><div id="productList" class="products"></div></div></section>
+<section id="sales" class="section"><div class="panel narrow"><h2>ثبت فروش</h2><select id="saleProduct"></select><input id="saleQty" type="number" min="1" value="1"><button class="primary full" onclick="addSale()">ثبت فروش</button><p id="saleMsg" class="success"></p></div></section>
+<section id="purchases" class="section"><div class="panel narrow"><h2>ثبت خرید / ورود کالا</h2><select id="purchaseProduct"></select><input id="purchaseQty" type="number" min="1" value="1"><input id="purchasePrice" type="number" min="0" placeholder="قیمت خرید هر عدد"><button class="primary full" onclick="addPurchase()">ثبت خرید</button><p id="purchaseMsg" class="success"></p></div></section>
+<section id="history" class="section"><div class="panel"><div class="row"><h2>تاریخچه خرید و فروش</h2><button onclick="loadAll()">بروزرسانی</button></div><div id="historyList" class="history"></div></div></section>
+</main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js"></script></body></html>

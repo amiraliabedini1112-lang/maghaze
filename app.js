@@ -1,182 +1,22 @@
-const USERNAME = "amirali";
-const PASSWORD = "sstttat";
-
-let products = [];
-
-try {
-    products = JSON.parse(localStorage.getItem("products") || "[]");
-    if (!Array.isArray(products)) products = [];
-} catch {
-    products = [];
-}
-
-function login() {
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
-
-    if (username === USERNAME && password === PASSWORD) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("app").style.display = "block";
-
-        renderProducts();
-        updateSaleProducts();
-    } else {
-        document.getElementById("error").textContent =
-            "نام کاربری یا رمز عبور اشتباه است.";
-    }
-}
-
-function logout() {
-    document.getElementById("app").style.display = "none";
-    document.getElementById("login").style.display = "block";
-}
-
-function show(section) {
-    document.getElementById("products").style.display =
-        section === "products" ? "block" : "none";
-
-    document.getElementById("sales").style.display =
-        section === "sales" ? "block" : "none";
-
-    updateSaleProducts();
-}
-
-function save() {
-    localStorage.setItem("products", JSON.stringify(products));
-}
-
-function addProduct() {
-    const name = document.getElementById("name").value.trim();
-    const buy = Number(document.getElementById("buy").value);
-    const sell = Number(document.getElementById("sell").value);
-    const stock = Number(document.getElementById("stock").value);
-
-    if (!name) {
-        alert("نام کالا را وارد کنید.");
-        return;
-    }
-
-    products.push({
-        id: Date.now(),
-        name,
-        buy,
-        sell,
-        stock
-    });
-
-    save();
-
-    document.getElementById("name").value = "";
-    document.getElementById("buy").value = "";
-    document.getElementById("sell").value = "";
-    document.getElementById("stock").value = "";
-
-    renderProducts();
-    updateSaleProducts();
-}
-
-function renderProducts() {
-    const list = document.getElementById("productList");
-
-    if (!products.length) {
-        list.innerHTML = "<p>هنوز کالایی ثبت نشده است.</p>";
-        return;
-    }
-
-    list.innerHTML = products.map(p => `
-        <div style="
-            background:white;
-            border:1px solid #ddd;
-            padding:15px;
-            margin:10px 0;
-            border-radius:10px;
-        ">
-            <strong>${p.name}</strong>
-            <br>
-            قیمت خرید: ${Number(p.buy).toLocaleString()} تومان
-            <br>
-            قیمت فروش: ${Number(p.sell).toLocaleString()} تومان
-            <br>
-            موجودی: ${p.stock}
-            <br><br>
-
-            <button onclick="changeStock(${p.id},1)">+ موجودی</button>
-            <button onclick="changeStock(${p.id},-1)">- موجودی</button>
-            <button onclick="deleteProduct(${p.id})">حذف</button>
-        </div>
-    `).join("");
-}
-function changeStock(id, amount) {
-    const product = products.find(p => p.id === id);
-
-    if (!product) return;
-
-    if (product.stock + amount < 0) {
-        alert("موجودی کافی نیست.");
-        return;
-    }
-
-    product.stock += amount;
-
-    save();
-    renderProducts();
-    updateSaleProducts();
-}
-
-function deleteProduct(id) {
-    if (!confirm("این کالا حذف شود؟")) return;
-
-    products = products.filter(p => p.id !== id);
-
-    save();
-    renderProducts();
-    updateSaleProducts();
-}
-
-function updateSaleProducts() {
-    const select = document.getElementById("saleProduct");
-
-    if (!select) return;
-
-    if (!products.length) {
-        select.innerHTML = "<option>ابتدا کالا ثبت کنید</option>";
-        return;
-    }
-
-    select.innerHTML = products.map(p => `
-        <option value="${p.id}">
-            ${p.name} - موجودی: ${p.stock}
-        </option>
-    `).join("");
-}
-
-function addSale() {
-    const id = Number(document.getElementById("saleProduct").value);
-    const qty = Number(document.getElementById("saleQty").value);
-
-    const product = products.find(p => p.id === id);
-
-    if (!product) {
-        alert("کالا انتخاب نشده است.");
-        return;
-    }
-
-    if (qty <= 0) {
-        alert("تعداد صحیح وارد کنید.");
-        return;
-    }
-
-    if (product.stock < qty) {
-        alert("موجودی کافی نیست.");
-        return;
-    }
-
-    product.stock -= qty;
-
-    save();
-    renderProducts();
-    updateSaleProducts();
-
-    document.getElementById("saleMessage").textContent =
-        "فروش با موفقیت ثبت شد.";
-}
+const SUPABASE_URL="https://xarblclsauoltgbeeyiw.supabase.co";
+const SUPABASE_KEY="sb_publishable_jSGWrehYjhZjEq-O-2dzNw_0DzOWMTz";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const USERNAME="amirali",PASSWORD="sstttat";let products=[],sales=[],purchases=[];
+const money=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+function status(t,ok=true){const e=document.getElementById("status");e.textContent=t;e.className="status "+(ok?"ok":"bad")}
+function login(){if(username.value.trim()===USERNAME&&password.value===PASSWORD){localStorage.loggedIn="1";document.getElementById("login").style.display="none";document.getElementById("app").style.display="flex";loadAll()}else error.textContent="نام کاربری یا رمز عبور اشتباه است."}
+function logout(){localStorage.removeItem("loggedIn");location.reload()}
+function show(id,b){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b?.classList.add("active");document.getElementById("pageTitle").textContent={dashboard:"داشبورد",products:"کالاها",sales:"ثبت فروش",purchases:"ثبت خرید",history:"تاریخچه"}[id]}
+async function loadAll(){status("در حال دریافت اطلاعات...");const [p,s,pu]=await Promise.all([db.from("products").select("*").order("created_at",{ascending:false}),db.from("sales").select("*").order("created_at",{ascending:false}).limit(100),db.from("purchases").select("*").order("created_at",{ascending:false}).limit(100)]);if(p.error||s.error||pu.error){console.error(p.error||s.error||pu.error);status("دسترسی دیتابیس تنظیم نشده",false);return}products=p.data||[];sales=s.data||[];purchases=pu.data||[];renderProducts();selects();history();dashboard();status("دیتابیس متصل است")}
+function renderProducts(){let q=document.getElementById("search").value.trim().toLowerCase(),a=products.filter(p=>String(p.name).toLowerCase().includes(q));productList.innerHTML=a.length?a.map(p=>`<div class="product"><div class="productHead"><strong>${esc(p.name)}</strong><span class="badge">${p.stock} عدد</span></div><div class="info"><span>خرید: ${money(p.buy_price)}</span><span>فروش: ${money(p.sell_price)}</span></div><div class="actions"><button onclick="changeStock(${p.id},1)">+ موجودی</button><button onclick="changeStock(${p.id},-1)">− موجودی</button><button class="danger" onclick="deleteProduct(${p.id})">حذف</button></div></div>`).join(""):"<div class='empty'>کالایی پیدا نشد.</div>"}
+function selects(){let o=products.length?products.map(p=>`<option value="${p.id}">${esc(p.name)} — موجودی: ${p.stock}</option>`).join(""):"<option value=''>ابتدا کالا ثبت کنید</option>";saleProduct.innerHTML=o;purchaseProduct.innerHTML=o}
+async function addProduct(){let n=name.value.trim(),b=+buy.value||0,s=+sell.value||0,st=+stock.value||0;if(!n)return alert("نام کالا را وارد کنید.");let r=await db.from("products").insert({name:n,buy_price:b,sell_price:s,stock:st});if(r.error)return alert(r.error.message);["name","buy","sell","stock"].forEach(id=>document.getElementById(id).value="");loadAll()}
+async function changeStock(id,a){let p=products.find(x=>x.id===id),st=Number(p.stock)+a;if(st<0)return alert("موجودی کافی نیست.");let r=await db.from("products").update({stock:st}).eq("id",id);if(r.error)return alert(r.error.message);loadAll()}
+async function deleteProduct(id){if(!confirm("این کالا حذف شود؟"))return;let r=await db.from("products").delete().eq("id",id);if(r.error)return alert("این کالا سابقه معامله دارد و حذف نشد.");loadAll()}
+async function addSale(){let p=products.find(x=>x.id===+saleProduct.value),q=+saleQty.value;if(!p)return alert("کالا انتخاب نشده است.");if(!Number.isInteger(q)||q<1)return alert("تعداد صحیح وارد کنید.");if(p.stock<q)return alert("موجودی کافی نیست.");let r=await db.from("sales").insert({product_id:p.id,product_name:p.name,quantity:q,price:p.sell_price,total:p.sell_price*q});if(r.error)return alert(r.error.message);r=await db.from("products").update({stock:p.stock-q}).eq("id",p.id);if(r.error)return alert("فروش ثبت شد ولی موجودی تغییر نکرد.");saleMsg.textContent="فروش با موفقیت ثبت شد.";loadAll()}
+async function addPurchase(){let p=products.find(x=>x.id===+purchaseProduct.value),q=+purchaseQty.value,pr=+purchasePrice.value||0;if(!p)return alert("کالا انتخاب نشده است.");if(!Number.isInteger(q)||q<1)return alert("تعداد صحیح وارد کنید.");let r=await db.from("purchases").insert({product_id:p.id,product_name:p.name,quantity:q,price:pr,total:pr*q});if(r.error)return alert(r.error.message);r=await db.from("products").update({stock:p.stock+q,buy_price:pr}).eq("id",p.id);if(r.error)return alert("خرید ثبت شد ولی موجودی تغییر نکرد.");purchaseMsg.textContent="خرید با موفقیت ثبت شد.";loadAll()}
+function date(x){return new Date(x).toLocaleString("fa-IR")}
+function history(){let a=[...sales.map(x=>({...x,type:"فروش"})),...purchases.map(x=>({...x,type:"خرید"}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));historyList.innerHTML=a.length?a.map(x=>`<div class="historyItem"><div><strong>${x.type} — ${esc(x.product_name)}</strong><small>${date(x.created_at)}</small></div><b>${x.quantity} عدد — ${money(x.total)}</b></div>`).join(""):"<div class='empty'>هنوز معامله‌ای ثبت نشده است.</div>"}
+function dashboard(){let st=products.reduce((a,p)=>a+ +p.stock,0),v=products.reduce((a,p)=>a+(+p.stock*+p.buy_price),0),today=new Date().toDateString(),todaySales=sales.filter(x=>new Date(x.created_at).toDateString()===today).reduce((a,x)=>a+ +x.total,0);statProducts.textContent=products.length.toLocaleString("fa-IR");statStock.textContent=st.toLocaleString("fa-IR");statSales.textContent=money(todaySales);statValue.textContent=money(v);let a=[...sales.map(x=>({...x,type:"فروش"})),...purchases.map(x=>({...x,type:"خرید"}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);recent.innerHTML=a.length?a.map(x=>`<div class="historyItem"><div><strong>${x.type} — ${esc(x.product_name)}</strong><small>${date(x.created_at)}</small></div><b>${money(x.total)}</b></div>`).join(""):"<div class='empty'>هنوز معامله‌ای ثبت نشده است.</div>"}
+window.addEventListener("load",()=>{if(localStorage.loggedIn){document.getElementById("login").style.display="none";document.getElementById("app").style.display="flex";loadAll()}})
